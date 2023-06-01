@@ -1,0 +1,83 @@
+"""Run the inference of Bi-LSTM model given input images."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import os
+import tensorflow as tf
+import pickle as pkl
+import numpy as np
+
+
+FLAGS = tf.flags.FLAGS
+
+
+def run(all_items, inference_model, inference_saver, inference_session):
+  # Remove image feature file if exist
+  if os.path.isfile(FLAGS.feature_file):
+    print("Feature file already exist. Deleting feature file...")
+    os.remove(FLAGS.feature_file)
+
+  # Restore session to checkpoint
+  inference_saver.restore(inference_session, FLAGS.checkpoint_path)
+  
+  # Save image ids and features in a dictionary.
+  image_features = dict()
+  count = 0
+  for item in all_items:
+        image_path = item['image']
+        if (count % 1000 == 0): print('Processed %d images...' % (count))
+        with tf.gfile.GFile(image_path, "r") as f:
+            image_feed = f.read()
+
+        [feat, rnn_feat] = inference_session.run([inference_model.image_embeddings,
+                                                  inference_model.rnn_image_embeddings],
+                                                  feed_dict={"image_feed:0": image_feed})
+        
+        image_features[image_path] = dict()
+        image_features[image_path]["image_rnn_feat"] = np.squeeze(rnn_feat)
+        image_features[image_path]["image_feat"] = np.squeeze(feat)
+        
+        count += 1
+
+  # Extract feature_file
+  with open(FLAGS.feature_file, "wb") as f:
+    pkl.dump(image_features, f)
+  
+  print("Extract %d images's features successfully!" % (count))
+
+  return 'Extract all item image features successfully!'
+
+
+def extract_new_item_image_features(new_item, inference_model, inference_saver, inference_session):
+  # Check if image feature file is exist
+  if os.path.isfile(FLAGS.feature_file):
+    # Restore session to checkpoint
+    inference_saver.restore(inference_session, FLAGS.checkpoint_path)
+
+    # Load pre-computed image features.
+    with open(FLAGS.feature_file, "rb") as f:
+      image_features = pkl.load(f)
+
+    # Extract new item image features
+    image_path = new_item['image']
+    with tf.gfile.GFile(image_path, "r") as f:
+        image_feed = f.read()
+
+    [feat, rnn_feat] = inference_session.run([inference_model.image_embeddings,
+                                              inference_model.rnn_image_embeddings],
+                                              feed_dict={"image_feed:0": image_feed})
+    
+    image_features[image_path] = dict()
+    image_features[image_path]["image_rnn_feat"] = np.squeeze(rnn_feat)
+    image_features[image_path]["image_feat"] = np.squeeze(feat)
+
+    # Delete old image_features file
+    os.remove(FLAGS.feature_file)
+
+    # Replace with new image_features file
+    with open(FLAGS.feature_file, "wb") as f:
+      pkl.dump(image_features, f)
+  else:
+    print("Feature file not exist!")
