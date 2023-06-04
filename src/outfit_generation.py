@@ -193,7 +193,7 @@ def nn_search(i, image_embs, word_vec):
   return np.argmax(score)
 
 
-def run(query_items, query_keyword, words, inference_model_config, inference_model, inference_saver, inference_session):
+def run(query_item_image_paths, query_keywords, words, inference_model_config, inference_model, inference_saver, inference_session):
   # Restore session to checkpoint
   inference_saver.restore(inference_session, FLAGS.checkpoint_path)
   
@@ -219,34 +219,39 @@ def run(query_items, query_keyword, words, inference_model_config, inference_mod
   [word_emb] = inference_session.run([inference_model.embedding_map])
 
   # Calculate the embedding of the query keyword
-  # Get all query item image paths
-  query_item_image_paths = [item["image"] for item in query_items]
-
   # Run Bi-LSTM model using the query item images
   rnn_sets = run_set_inference(inference_session, query_item_image_paths, image_paths,
                                 image_feats, inference_model_config.num_lstm_units)
   
   print("RNN recommend outfit before applying keyword:", rnn_sets)
 
+  recommendation_results = []
+
   # Reranking the LSTM prediction with similarity with the query keyword        
-  if query_keyword != "":
-    # Get the indices of query images.
-    image_idx = []
-    for query_item_image_path in query_item_image_paths:
-      try:
-        image_idx.append(image_paths.index(query_item_image_path))
-      except:
-        print('not found')
-        return
+  for query_keyword in query_keywords:
+    if query_keyword != "":
+      # Get the indices of query images.
+      image_idx = []
+      for query_item_image_path in query_item_image_paths:
+        try:
+          image_idx.append(image_paths.index(query_item_image_path))
+        except:
+          print('not found')
+          return
 
-    # Calculate the word embedding
-    query_keyword = [i+1 for i in range(len(words)) if words[i] in query_keyword.split()]
+      outfit_recommendations = np.array(rnn_sets)
+      
+      # Calculate the word embedding
+      query_keyword = [i+1 for i in range(len(words)) if words[i] in query_keyword.split()]
+      query_emb = norm_row(np.sum(word_emb[query_keyword], axis=0))
+      for i, j in enumerate(outfit_recommendations):
+        if j not in image_idx:
+          outfit_recommendations[i] = nn_search(j, image_embs, query_emb)
+      
+      print("RNN recommend outfit after applying keyword:", outfit_recommendations)
+      outfit_recommendation_image_paths = list(set([image_paths[i] for i in outfit_recommendations]))
 
-    query_emb = norm_row(np.sum(word_emb[query_keyword], axis=0))
-    for i, j in enumerate(rnn_sets):
-      if j not in image_idx:
-        rnn_sets[i] = nn_search(j, image_embs, query_emb)
-    
-    print("RNN recommend outfit after applying keyword:", rnn_sets)
+      recommendation_results.append([item_image_path for item_image_path in outfit_recommendation_image_paths 
+                                      if item_image_path not in query_item_image_paths])
 
-  return list(set([image_paths[i] for i in rnn_sets]))
+  return recommendation_results
