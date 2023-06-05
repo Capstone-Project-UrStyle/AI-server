@@ -65,23 +65,26 @@ def extract_all_item_image_features():
 
 @app.route('/extract-new-item-image-features', methods=['GET'])
 def extract_new_item_image_features():
-    # Get new item data from request
-    new_item = list(request.get_json().get('new_item'))
+    try:
+        # Get new item data from request
+        new_item = request.get_json().get('new_item')
 
-    if (new_item != None and
-        inference_model_config != None and
-        inference_model != None and
-        inference_saver != None and
-        inference_session != None):
-        
-        # Extract all items's image feature
-        extract_feature_result = extract_new_item_image_features.run(new_item,
-                                                                     inference_model,
-                                                                     inference_saver,
-                                                                     inference_session)
-        
-        return extract_feature_result
-    else:
+        if (new_item != None and
+            inference_model_config != None and
+            inference_model != None and
+            inference_saver != None and
+            inference_session != None):
+            
+            # Extract all items's image feature
+            extract_feature_result = extract_new_item_image_features.run(new_item,
+                                                                         inference_model,
+                                                                         inference_saver,
+                                                                         inference_session)
+            
+            return extract_feature_result
+        else:
+            return 'Request not valid or model is not configured yet!'
+    except:
         return 'Something went wrong!'
 
 @app.route('/generate-outfit-recommendation', methods=['POST'])
@@ -99,30 +102,32 @@ def generate_outfit_recommendation():
                 ...
             ]
     """
-    
-    # Get data from request
-    data = request.get_json()
-    query_item_image_paths = list(data.get('query_item_image_paths'))
-    query_keywords = list(data.get('query_keywords'))
+    try:
+        # Get data from request
+        data = request.get_json()
+        query_item_image_paths = list(data.get('query_item_image_paths'))
+        query_keywords = list(data.get('query_keywords'))
 
-    if (query_item_image_paths != None and
-        query_keywords != None and
-        inference_model_config != None and
-        inference_model != None and
-        inference_saver != None and
-        inference_session != None):
+        if (query_item_image_paths != None and
+            query_keywords != None and
+            inference_model_config != None and
+            inference_model != None and
+            inference_saver != None and
+            inference_session != None):
 
-        # Generate outfit recommendations
-        outfit_generate_result = outfit_generation.run(query_item_image_paths,
-                                                       query_keywords,
-                                                       words,
-                                                       inference_model_config,
-                                                       inference_model,
-                                                       inference_saver,
-                                                       inference_session)
+            # Generate outfit recommendations
+            outfit_generate_result = outfit_generation.run(query_item_image_paths,
+                                                           query_keywords,
+                                                           words,
+                                                           inference_model_config,
+                                                           inference_model,
+                                                           inference_saver,
+                                                           inference_session)
 
-        return json.dumps(outfit_generate_result)
-    else:
+            return json.dumps(outfit_generate_result)
+        else:
+            return 'Request not valid or model is not configured yet!'
+    except:
         return 'Something went wrong!'
 
 
@@ -143,61 +148,62 @@ def predict_fashion_compatibility():
                 ...
             ]
     """
+    try:
+        # Get data from request
+        data = request.get_json()
+        items = list(data.get('items'))
+        limit = int(data.get('limit'))
 
-    # Get data from request
-    data = request.get_json()
-    items = list(data.get('items'))
-    limit = list(data.get('limit'))
+        if (items != None and limit != None):
+            # 1. Find unique categories
+            unique_categories = set(item['category_id'] for item in items)
 
-    if (items != None and limit != None):
-        # 1. Find unique categories
-        unique_categories = set(item['category_id'] for item in items)
-
-        # 2. Generate all possible sets of items with unique category id
-        # Group items by category
-        grouped_items = {}
-        for item in items:
-            item_category = item['category_id']
-            if item_category in grouped_items:
-                grouped_items[item_category].append(item)
-            else:
-                grouped_items[item_category] = [item]
-        
-        # Generate all possible sets
-        all_sets = []
-        for combination in itertools.product(*(grouped_items[category_id] for category_id in unique_categories)):
-            all_sets.append(list(combination))
-
-        # 3. Predict fashion compatiblity of each outfit combinations
-        if (inference_model_config != None and
-            inference_model != None and
-            inference_saver != None and
-            inference_session != None):
-
-
-            # Generate outfit recommendations
-            fashion_compatibility_scores = fashion_compatibility.run(all_sets,
-                                                                    inference_model_config,
-                                                                    inference_model,
-                                                                    inference_saver,
-                                                                    inference_session)
-
-            # 4. Return top 5 highest score outfit
-            # Combine sets and fashion compatibility scores using zip
-            combined_set_score = zip(all_sets, fashion_compatibility_scores)
+            # 2. Generate all possible sets of items with unique category id
+            # Group items by category
+            grouped_items = {}
+            for item in items:
+                item_category = item['category_id']
+                if item_category in grouped_items:
+                    grouped_items[item_category].append(item)
+                else:
+                    grouped_items[item_category] = [item]
             
-            # Sort the combined data based on scores in descending order
-            sorted_sets_by_score = sorted(combined_set_score, key=lambda x: x[1], reverse=True)
-            
-            # Create a new array with sets and scores
-            result = []
-            for item_set, score in sorted_sets_by_score[:limit]:
-                result.append({"items": item_set, "score": str(score)})
+            # Generate all possible sets
+            all_sets = []
+            for combination in itertools.product(*(grouped_items[category_id] for category_id in unique_categories)):
+                all_sets.append(list(combination))
 
-            return json.dumps(result)
-    else:
+            # 3. Predict fashion compatiblity of each outfit combinations
+            if (inference_model_config != None and
+                inference_model != None and
+                inference_saver != None and
+                inference_session != None):
+
+
+                # Generate outfit recommendations
+                fashion_compatibility_scores = fashion_compatibility.run(all_sets,
+                                                                         inference_model_config,
+                                                                         inference_model,
+                                                                         inference_saver,
+                                                                         inference_session)
+
+                # 4. Return top 5 highest score outfit
+                # Combine sets and fashion compatibility scores using zip
+                combined_set_score = zip(all_sets, fashion_compatibility_scores)
+                
+                # Sort the combined data based on scores in descending order
+                sorted_sets_by_score = sorted(combined_set_score, key=lambda x: x[1], reverse=True)
+                
+                # Create a new array with sets and scores
+                result = []
+                for item_set, score in sorted_sets_by_score[:limit]:
+                    result.append({"items": item_set, "score": str(score)})
+
+                return json.dumps(result)
+        else:
+            return 'Request not valid or model is not configured yet!'
+    except:
         return 'Something went wrong!'
-
 
 def built_inference_model():
     global inference_model_config, inference_model, inference_saver, inference_session
