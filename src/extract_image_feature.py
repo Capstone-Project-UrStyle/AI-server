@@ -50,7 +50,7 @@ def run(all_items, inference_model, inference_saver, inference_session):
   return 'Extract all item image features successfully!'
 
 
-def extract_new_item_image_features(new_item, inference_model, inference_saver, inference_session):
+def extract_new_item_image_features(new_item_image_path, inference_model, inference_saver, inference_session):
   # Check if image feature file is exist
   if os.path.isfile(FLAGS.feature_file):
     # Restore session to checkpoint
@@ -61,17 +61,16 @@ def extract_new_item_image_features(new_item, inference_model, inference_saver, 
       image_features = pkl.load(f)
 
     # Extract new item image features
-    image_path = new_item['image']
-    with tf.gfile.GFile(image_path, "r") as f:
+    with tf.gfile.GFile(new_item_image_path, "r") as f:
         image_feed = f.read()
 
     [feat, rnn_feat] = inference_session.run([inference_model.image_embeddings,
                                               inference_model.rnn_image_embeddings],
                                               feed_dict={"image_feed:0": image_feed})
     
-    image_features[image_path] = dict()
-    image_features[image_path]["image_rnn_feat"] = np.squeeze(rnn_feat)
-    image_features[image_path]["image_feat"] = np.squeeze(feat)
+    image_features[new_item_image_path] = dict()
+    image_features[new_item_image_path]["image_rnn_feat"] = np.squeeze(rnn_feat)
+    image_features[new_item_image_path]["image_feat"] = np.squeeze(feat)
 
     # Delete old image_features file
     os.remove(FLAGS.feature_file)
@@ -79,5 +78,7 @@ def extract_new_item_image_features(new_item, inference_model, inference_saver, 
     # Replace with new image_features file
     with open(FLAGS.feature_file, "wb") as f:
       pkl.dump(image_features, f)
+
+    return "Extract new item image features successfully!"
   else:
-    print("Feature file not exist!")
+    return "Feature file not exist!"

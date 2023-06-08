@@ -63,23 +63,23 @@ def extract_all_item_image_features():
         return 'Something went wrong!'
 
 
-@app.route('/extract-new-item-image-features', methods=['GET'])
+@app.route('/extract-new-item-image-features', methods=['POST'])
 def extract_new_item_image_features():
     try:
         # Get new item data from request
-        new_item = request.get_json().get('new_item')
+        new_item_image_path = request.get_json().get('new_item_image_path')
 
-        if (new_item != None and
+        if (new_item_image_path != None and
             inference_model_config != None and
             inference_model != None and
             inference_saver != None and
             inference_session != None):
             
             # Extract all items's image feature
-            extract_feature_result = extract_new_item_image_features.run(new_item,
-                                                                         inference_model,
-                                                                         inference_saver,
-                                                                         inference_session)
+            extract_feature_result = extract_image_feature.extract_new_item_image_features(new_item_image_path,
+                                                                                           inference_model,
+                                                                                           inference_saver,
+                                                                                           inference_session)
             
             return extract_feature_result
         else:
