@@ -87,6 +87,24 @@ def extract_new_item_image_features():
     except:
         return 'Something went wrong!'
 
+
+@app.route('/remove-item-image-features', methods=['POST'])
+def remove_item_image_features():
+    try:
+        # Get item data from request
+        item_image_path = request.get_json().get('item_image_path')
+
+        if (item_image_path != None):
+            # Extract all items's image feature
+            remove_feature_result = extract_image_feature.remove_item_image_features(item_image_path)
+            
+            return remove_feature_result
+        else:
+            return 'Request not valid or model is not configured yet!'
+    except:
+        return 'Something went wrong!'
+
+
 @app.route('/generate-outfit-recommendation', methods=['POST'])
 def generate_outfit_recommendation():
     """

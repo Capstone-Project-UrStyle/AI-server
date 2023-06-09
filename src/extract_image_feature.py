@@ -82,3 +82,28 @@ def extract_new_item_image_features(new_item_image_path, inference_model, infere
     return "Extract new item image features successfully!"
   else:
     return "Feature file not exist!"
+
+
+def remove_item_image_features(item_image_path):
+  # Check if image feature file is exist
+  if os.path.isfile(FLAGS.feature_file):
+    # Load pre-computed image features.
+    with open(FLAGS.feature_file, "rb") as f:
+      image_features = pkl.load(f)
+    
+    # Remove item image path key in feature file
+    if item_image_path in image_features:
+      del image_features[item_image_path]
+    else:
+      return 'Item image path not exists!'
+
+    # Delete old image_features file
+    os.remove(FLAGS.feature_file)
+
+    # Replace with new image_features file
+    with open(FLAGS.feature_file, "wb") as f:
+      pkl.dump(image_features, f)
+
+    return "Remove item image features successfully!"
+  else:
+    return "Feature file not exist!"
