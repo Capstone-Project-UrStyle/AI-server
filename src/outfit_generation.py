@@ -193,19 +193,16 @@ def nn_search(i, image_embs, word_vec):
   return np.argmax(score)
 
 
-def run(query_item_image_paths, query_keywords, words, inference_model_config, inference_model, inference_saver, inference_session):
+def run(query_item_image_paths, query_keywords, words,
+        image_features, inference_model_config, inference_model, inference_saver, inference_session):
   # Restore session to checkpoint
   inference_saver.restore(inference_session, FLAGS.checkpoint_path)
-  
-  # Load pre-computed image features.
-  with open(FLAGS.feature_file, "rb") as f:
-    image_features = pkl.load(f)
 
   image_paths = image_features.keys() # image_paths
   image_feats = np.zeros((len(image_paths) + 1,
-                        len(image_features[image_paths[0]]["image_rnn_feat"])))
+                          len(image_features[image_paths[0]]["image_rnn_feat"])))
   image_embs = np.zeros((len(image_paths),
-                        len(image_features[image_paths[0]]["image_feat"])))
+                         len(image_features[image_paths[0]]["image_feat"])))
 
   for i, image_path in enumerate(image_paths):
     # Image feature in the RNN space.

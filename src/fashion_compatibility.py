@@ -79,13 +79,10 @@ def run_compatibility_inference(inference_session, image_seqs, image_feats, num_
   return [f_score, b_score]
 
   
-def run(item_sets, inference_model_config, inference_model, inference_saver, inference_session):
+def run(item_sets, image_features, inference_model_config, inference_model, inference_saver, inference_session):
   # Restore session to checkpoint
   inference_saver.restore(inference_session, FLAGS.checkpoint_path)
-  
-  # Load pre-computed image features.
-  with open(FLAGS.feature_file, "rb") as f:
-    image_features = pkl.load(f)
+
   image_paths = image_features.keys()
   
   image_feats = np.zeros((len(image_paths) + 1,

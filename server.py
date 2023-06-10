@@ -5,6 +5,7 @@ import os
 import json
 import tensorflow as tf
 import itertools
+import pickle as pkl
 
 from src import configuration
 from src import polyvore_model_bi as polyvore_model
@@ -20,6 +21,8 @@ app.secret_key = "secrect_key"
 
 words = None
 
+image_features = None
+
 inference_model_config = None
 inference_model = None
 inference_saver = None
@@ -34,6 +37,7 @@ tf.flags.DEFINE_string("feature_file", "data/features/image_features.pkl",
                       "Directory to save the features")
 tf.flags.DEFINE_string("rnn_type", "lstm", "Type of RNN.")
 
+FLAGS = tf.flags.FLAGS
 
 def extract_all_item_image_features():
     all_item_image_paths = []
@@ -70,6 +74,7 @@ def extract_new_item_image_features():
         new_item_image_path = request.get_json().get('new_item_image_path')
 
         if (new_item_image_path != None and
+            image_features != None and
             inference_model_config != None and
             inference_model != None and
             inference_saver != None and
@@ -77,6 +82,7 @@ def extract_new_item_image_features():
             
             # Extract all items's image feature
             extract_feature_result = extract_image_feature.extract_new_item_image_features(new_item_image_path,
+                                                                                           image_features,
                                                                                            inference_model,
                                                                                            inference_saver,
                                                                                            inference_session)
@@ -94,9 +100,10 @@ def remove_item_image_features():
         # Get item data from request
         item_image_path = request.get_json().get('item_image_path')
 
-        if (item_image_path != None):
+        if (item_image_path != None and image_features != None):
             # Extract all items's image feature
-            remove_feature_result = extract_image_feature.remove_item_image_features(item_image_path)
+            remove_feature_result = extract_image_feature.remove_item_image_features(item_image_path,
+                                                                                     image_features)
             
             return remove_feature_result
         else:
@@ -128,6 +135,7 @@ def generate_outfit_recommendation():
 
         if (query_item_image_paths != None and
             query_keywords != None and
+            image_features != None and
             inference_model_config != None and
             inference_model != None and
             inference_saver != None and
@@ -137,6 +145,7 @@ def generate_outfit_recommendation():
             outfit_generate_result = outfit_generation.run(query_item_image_paths,
                                                            query_keywords,
                                                            words,
+                                                           image_features,
                                                            inference_model_config,
                                                            inference_model,
                                                            inference_saver,
@@ -192,7 +201,8 @@ def predict_fashion_compatibility():
                 all_sets.append(list(combination))
 
             # 3. Predict fashion compatiblity of each outfit combinations
-            if (inference_model_config != None and
+            if (image_features != None and
+                inference_model_config != None and
                 inference_model != None and
                 inference_saver != None and
                 inference_session != None):
@@ -200,6 +210,7 @@ def predict_fashion_compatibility():
 
                 # Generate outfit recommendations
                 fashion_compatibility_scores = fashion_compatibility.run(all_sets,
+                                                                         image_features,
                                                                          inference_model_config,
                                                                          inference_model,
                                                                          inference_saver,
@@ -248,8 +259,14 @@ if __name__ == "__main__":
     built_inference_model()
 
     # Check if image features file is exist
-    if not os.path.isfile("data/features/image_features.pkl"):
+    if not os.path.isfile(FLAGS.feature_file):
         print("Feature file is not exist. Extracting all item image features...")
         extract_all_item_image_features()
     
+    # Load pre-computed image features
+    print('Loading pre-computed image features...')
+    with open(FLAGS.feature_file, "rb") as f:
+        image_features = pkl.load(f)
+    print('Pre-computed image features loaded successfully!')
+
     app.run(port=5000, host='0.0.0.0')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
