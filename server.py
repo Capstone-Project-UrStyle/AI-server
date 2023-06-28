@@ -112,7 +112,7 @@ def remove_item_image_features():
         return 'Something went wrong!'
 
 
-@app.route('/generate-outfit-recommendation', methods=['POST'])
+@app.route('/generate-item-recommendations', methods=['POST'])
 def generate_outfit_recommendation():
     """
         Input:
@@ -158,7 +158,7 @@ def generate_outfit_recommendation():
         return 'Something went wrong!'
 
 
-@app.route('/predict-fashion-compatibility', methods=['POST'])
+@app.route('/generate-outfit-recommendations', methods=['POST'])
 def predict_fashion_compatibility():
     """
         Input:
