@@ -41,11 +41,11 @@ FLAGS = tf.flags.FLAGS
 
 def extract_all_item_image_features():
     all_item_image_paths = []
-    folder_path = 'public/images/items/'
-    file_names = os.listdir(folder_path)
+    image_folder_path = 'public/images/items/'
+    file_names = os.listdir(image_folder_path)
 
     for file_name in file_names:
-        file_path = os.path.join(folder_path, file_name)
+        file_path = os.path.join(image_folder_path, file_name)
         if os.path.isfile(file_path):
             all_item_image_paths.append(file_path)
     
