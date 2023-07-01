@@ -182,22 +182,22 @@ def predict_fashion_compatibility():
         limit = int(data.get('limit'))
 
         if (items != None and limit != None):
-            # 1. Find unique categories
-            unique_categories = set(item['category_id'] for item in items)
+            # 1. Find unique parent categories
+            unique_parent_categories = set(item['Category']['parent_id'] for item in items)
 
-            # 2. Generate all possible sets of items with unique category id
-            # Group items by category
+            # 2. Generate all possible sets of items with unique parent category
+            # Group items by parent category
             grouped_items = {}
             for item in items:
-                item_category = item['category_id']
-                if item_category in grouped_items:
-                    grouped_items[item_category].append(item)
+                item_parent_category = item['Category']['parent_id']
+                if item_parent_category in grouped_items:
+                    grouped_items[item_parent_category].append(item)
                 else:
-                    grouped_items[item_category] = [item]
+                    grouped_items[item_parent_category] = [item]
             
             # Generate all possible sets
             all_sets = []
-            for combination in itertools.product(*(grouped_items[category_id] for category_id in unique_categories)):
+            for combination in itertools.product(*(grouped_items[parent_category] for parent_category in unique_parent_categories)):
                 all_sets.append(list(combination))
 
             # 3. Predict fashion compatiblity of each outfit combinations
@@ -210,11 +210,11 @@ def predict_fashion_compatibility():
 
                 # Generate outfit recommendations
                 fashion_compatibility_scores = fashion_compatibility.run(all_sets,
-                                                                         image_features,
-                                                                         inference_model_config,
-                                                                         inference_model,
-                                                                         inference_saver,
-                                                                         inference_session)
+                                                                            image_features,
+                                                                            inference_model_config,
+                                                                            inference_model,
+                                                                            inference_saver,
+                                                                            inference_session)
 
                 # 4. Return top 5 highest score outfit
                 # Combine sets and fashion compatibility scores using zip
